@@ -1,4 +1,4 @@
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const express = require('express');
 const cors = require("cors");
 const app = express();
@@ -34,16 +34,31 @@ async function run() {
         if(email){
             query.senderEmail = email;
         }
-
         const cursor = parcelCollection.find(query);
         const result = await cursor.toArray();
         res.send(result);
     })
 
+    app.get('/parcels/:id', async(req, res)=>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)};
+      const result = await parcelCollection.findOne(query);
+      res.send(result);
+    })
+
     app.post('/parcels', async (req, res)=>{
         const parcel = req.body;
+        // Parcel creation time
+        parcel.createdAt = new Date();
         const result = await parcelCollection.insertOne(parcel);
         res.send(result);
+    })
+
+    app.delete('/parcels/:id', async (req, res)=>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const result = await parcelCollection.deleteOne(query);
+      res.send(result);
     })
 
     await client.db("admin").command({ ping: 1 });
