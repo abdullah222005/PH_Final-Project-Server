@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require("cors");
 const app = express();
 require('dotenv').config();
+const stripe = require('stripe')(process.env.STRIPE_SECRET);
 
 const port = process.env.PORT || 3333;
 
@@ -59,6 +60,34 @@ async function run() {
       const query = {_id: new ObjectId(id)}
       const result = await parcelCollection.deleteOne(query);
       res.send(result);
+    })
+
+    // payment section's api
+    app.post('/zapshift-checkout-session', async(req, res)=>{
+      const paymentInfo = req.body;
+      const amount = parseInt(paymentInfo.cost) * 100;
+      const session = await stripe.checkout.sessions.create({
+        line_items: [
+          {
+            price_data: {
+              currency: 'USD',
+              unit_amount: amount,
+              product_data: {
+                name: paymentInfo.parcelName
+              }
+            },
+            quantity: 1,
+          },
+        ], 
+        customer_email: paymentInfo.senderEmail,
+        mode: 'payment',
+        metadata:{
+          parcelId: paymentInfo.parcelId
+        },
+         success_url: `${process.env.SITE_DOMAIN}/dashboard/payment-success`,
+         cancel_url: `${process.env.SITE_DOMAIN}/dashboard/payment-cancelled`,
+      })
+      res.send({url: session.url});
     })
 
     await client.db("admin").command({ ping: 1 });
