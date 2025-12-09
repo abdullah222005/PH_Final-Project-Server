@@ -235,9 +235,22 @@ async function run() {
    })
 
    app.get('/riders', async(req, res)=>{
-    const query = {applicationStatus: 'pending'}
-    const cursor = ridersCollection.find(query);
+    // const query = {applicationStatus: 'Pending'}
+    const cursor = ridersCollection.find();
     const result = await cursor.toArray();
+    res.send(result);
+   })
+
+   app.patch('/riders/:id', verifyFirebaseToken, async(req, res)=>{
+    const status = req.body.applicationStatus;
+    const id = req.params.id;
+    const query = {_id: new ObjectId(id)}
+    const updates = {
+      $set: {
+        applicationStatus: status,
+      }
+    }
+    const result = await ridersCollection.updateOne(query, updates);
     res.send(result);
    })
 
